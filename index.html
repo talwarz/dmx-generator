@@ -44,7 +44,10 @@
     .category-label { color: #e5e7eb; font-weight: 700; }
     .unassigned-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; margin-top: 16px; }
     .unassigned-box { background: linear-gradient(135deg, #f97316, #ea580c); min-height: 170px; border-radius: 10px; border: 1px solid #fb923c; padding: 10px; color: white; box-shadow: inset 0 0 18px rgba(0,0,0,.18); }
-    .unassigned-item { padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,.25); }
+    .unassigned-item { padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,.25); cursor: grab; border-radius: 6px; }
+    .unassigned-item:hover { background: rgba(255,255,255,.14); }
+    .drop-cell { transition: .15s ease; }
+    .drop-cell:hover { background: rgba(249,115,22,.12); }
     @media (max-width: 1000px) { .grid, .unassigned-grid { grid-template-columns: repeat(2, 1fr); } }
     @media (max-width: 560px) { .grid, .unassigned-grid { grid-template-columns: 1fr; } header h1 { font-size: 24px; } table { font-size: 13px; } }
   </style>
@@ -87,7 +90,7 @@
       <div class="wheel-head">
         <div>
           <h2>Wheel Assignment</h2>
-          <p class="small-text">Category ke hisaab se Wheel 1, Wheel 2, Wheel 3 mein function select karo. Page badalne par alag assignment milega.</p>
+          <p class="small-text">Category ke hisaab se Wheel 1, Wheel 2, Wheel 3, Wheel 4 mein function select karo ya Unassigned list se drag & drop karo. Page badalne par alag assignment milega.</p>
         </div>
         <div class="page-control">
           <button class="secondary" onclick="changePage(-1)">-</button>
@@ -99,7 +102,7 @@
       <div id="errorBox" class="error-box"></div>
       <div class="table-wrap">
         <table class="assignment-table">
-          <thead><tr><th>Category</th><th>Wheel 1</th><th>Wheel 2</th><th>Wheel 3</th></tr></thead>
+          <thead><tr><th>Category</th><th>Wheel 1</th><th>Wheel 2</th><th>Wheel 3</th><th>Wheel 4</th></tr></thead>
           <tbody id="assignmentBody"></tbody>
         </table>
       </div>
@@ -142,7 +145,7 @@
 
     function blankPage() {
       const page = {};
-      categories.forEach(cat => page[cat] = { w1: '', w2: '', w3: '' });
+      categories.forEach(cat => page[cat] = { w1: '', w2: '', w3: '', w4: '' });
       return page;
     }
 
@@ -232,13 +235,13 @@
       document.getElementById('currentPage').value = 1;
       wheelAssignments = {};
       ensurePage(1);
-      wheelAssignments[1]['Intensity'] = { w1: 'Shutter', w2: '', w3: '' };
-      wheelAssignments[1]['Colour'] = { w1: 'Colour Func', w2: 'Colour', w3: '' };
-      wheelAssignments[1]['C-Mix'] = { w1: 'Red', w2: 'Green', w3: 'Blue' };
-      wheelAssignments[1]['Beam'] = { w1: '', w2: 'Focus', w3: 'Frost' };
-      wheelAssignments[1]['Effect'] = { w1: '', w2: 'Prism 1', w3: 'Prism 1 Rot' };
-      wheelAssignments[1]['Special'] = { w1: 'P/T Speed', w2: '', w3: '' };
-      wheelAssignments[1]['Control'] = { w1: 'Control', w2: '', w3: '' };
+      wheelAssignments[1]['Intensity'] = { w1: 'Shutter', w2: '', w3: '', w4: '' };
+      wheelAssignments[1]['Colour'] = { w1: 'Colour Func', w2: 'Colour', w3: '', w4: '' };
+      wheelAssignments[1]['C-Mix'] = { w1: 'Red', w2: 'Green', w3: 'Blue', w4: '' };
+      wheelAssignments[1]['Beam'] = { w1: '', w2: 'Focus', w3: 'Frost', w4: '' };
+      wheelAssignments[1]['Effect'] = { w1: '', w2: 'Prism 1', w3: 'Prism 1 Rot', w4: '' };
+      wheelAssignments[1]['Special'] = { w1: 'P/T Speed', w2: '', w3: '', w4: '' };
+      wheelAssignments[1]['Control'] = { w1: 'Control', w2: '', w3: '', w4: '' };
       renderChannels();
     }
 
@@ -251,9 +254,10 @@
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td class="category-label">${cat}</td>
-          <td><select onchange="setAssignment('${cat}', 'w1', this.value)">${buildAssignmentOptions(row.w1)}</select></td>
-          <td><select onchange="setAssignment('${cat}', 'w2', this.value)">${buildAssignmentOptions(row.w2)}</select></td>
-          <td><select onchange="setAssignment('${cat}', 'w3', this.value)">${buildAssignmentOptions(row.w3)}</select></td>`;
+          <td class="drop-cell" ondragover="allowDrop(event)" ondrop="dropFunction(event, '${cat}', 'w1')"><select onchange="setAssignment('${cat}', 'w1', this.value)">${buildAssignmentOptions(row.w1)}</select></td>
+          <td class="drop-cell" ondragover="allowDrop(event)" ondrop="dropFunction(event, '${cat}', 'w2')"><select onchange="setAssignment('${cat}', 'w2', this.value)">${buildAssignmentOptions(row.w2)}</select></td>
+          <td class="drop-cell" ondragover="allowDrop(event)" ondrop="dropFunction(event, '${cat}', 'w3')"><select onchange="setAssignment('${cat}', 'w3', this.value)">${buildAssignmentOptions(row.w3)}</select></td>
+          <td class="drop-cell" ondragover="allowDrop(event)" ondrop="dropFunction(event, '${cat}', 'w4')"><select onchange="setAssignment('${cat}', 'w4', this.value)">${buildAssignmentOptions(row.w4)}</select></td>`;
         body.appendChild(tr);
       });
       renderUnassigned();
@@ -263,8 +267,23 @@
     function setAssignment(category, wheelKey, value) {
       ensurePage(activePage);
       wheelAssignments[activePage][category][wheelKey] = value;
-      renderUnassigned();
+      renderAssignment();
       validateWheelMapping();
+    }
+
+    function dragFunction(event, functionName) {
+      event.dataTransfer.setData('text/plain', functionName);
+    }
+
+    function allowDrop(event) {
+      event.preventDefault();
+    }
+
+    function dropFunction(event, category, wheelKey) {
+      event.preventDefault();
+      const functionName = event.dataTransfer.getData('text/plain');
+      if (!functionName) return;
+      setAssignment(category, wheelKey, functionName);
     }
 
     function renderUnassigned() {
@@ -274,7 +293,7 @@
       const box = document.getElementById('unassignedBox');
       const names = [...new Set(channels.map(ch => String(ch.name || '').trim()).filter(Boolean))];
       const unassigned = names.filter(name => !assigned.has(name));
-      box.innerHTML = unassigned.length ? unassigned.map(name => `<div class="unassigned-item">${escapeHtml(name)}</div>`).join('') : '<div class="unassigned-item">All functions assigned on this page</div>';
+      box.innerHTML = unassigned.length ? unassigned.map(name => `<div class="unassigned-item" draggable="true" ondragstart="dragFunction(event, '${escapeHtml(name)}')">${escapeHtml(name)}</div>`).join('') : '<div class="unassigned-item">All functions assigned on this page</div>';
     }
 
     function changePage(delta) { setPage(activePage + delta); }
@@ -317,8 +336,9 @@
       Object.keys(data.wheelAssignments).sort((a,b)=>Number(a)-Number(b)).forEach(pageNo => {
         xml += `    <page number="${pageNo}">\n`;
         categories.forEach(cat => {
-          const row = data.wheelAssignments[pageNo][cat] || { w1:'', w2:'', w3:'' };
-          xml += `      <category name="${xmlEscape(cat)}" wheel1="${xmlEscape(row.w1)}" wheel2="${xmlEscape(row.w2)}" wheel3="${xmlEscape(row.w3)}" />\n`;
+          const row = data.wheelAssignments[pageNo][cat] || { w1:'', w2:'', w3:'', w4:'' };
+          xml += `      <category name="${xmlEscape(cat)}" wheel1="${xmlEscape(row.w1)}" wheel2="${xmlEscape(row.w2)}" wheel3="${xmlEscape(row.w3)}" wheel4="${xmlEscape(row.w4)}" />
+`;
         });
         xml += `    </page>\n`;
       });
@@ -333,8 +353,9 @@
       Object.keys(data.wheelAssignments).sort((a,b)=>Number(a)-Number(b)).forEach(pageNo => {
         text += `\n[Wheel_Assignment_Page_${pageNo}]\n`;
         categories.forEach(cat => {
-          const row = data.wheelAssignments[pageNo][cat] || { w1:'', w2:'', w3:'' };
-          text += `${cat}=Wheel1:${row.w1 || ''},Wheel2:${row.w2 || ''},Wheel3:${row.w3 || ''}\n`;
+          const row = data.wheelAssignments[pageNo][cat] || { w1:'', w2:'', w3:'', w4:'' };
+          text += `${cat}=Wheel1:${row.w1 || ''},Wheel2:${row.w2 || ''},Wheel3:${row.w3 || ''},Wheel4:${row.w4 || ''}
+`;
         });
       });
       text += `\n[Notes]\n${data.notes}\n`;
@@ -348,8 +369,9 @@
       Object.keys(data.wheelAssignments).sort((a,b)=>Number(a)-Number(b)).forEach(pageNo => {
         text += `\nWHEEL_ASSIGNMENT_PAGE_${pageNo}\n`;
         categories.forEach(cat => {
-          const row = data.wheelAssignments[pageNo][cat] || { w1:'', w2:'', w3:'' };
-          text += `${cat}|W1=${row.w1 || ''}|W2=${row.w2 || ''}|W3=${row.w3 || ''}\n`;
+          const row = data.wheelAssignments[pageNo][cat] || { w1:'', w2:'', w3:'', w4:'' };
+          text += `${cat}|W1=${row.w1 || ''}|W2=${row.w2 || ''}|W3=${row.w3 || ''}|W4=${row.w4 || ''}
+`;
         });
       });
       text += `\nNOTES:${data.notes}\n`;
