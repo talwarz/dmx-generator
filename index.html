@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DMX Fixture File Generator</title>
+  <title>TALWARZ DMX Light Fixture File Generator</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -20,7 +20,7 @@
     header h1 { margin: 0; font-size: 30px; }
     header p { margin: 8px 0 0; color: #fff7ed; }
     .container {
-      max-width: 1150px;
+      max-width: 1250px;
       margin: 24px auto;
       padding: 0 16px;
     }
@@ -64,6 +64,7 @@
       border-bottom: 1px solid #334155;
       padding: 10px;
       text-align: left;
+      vertical-align: top;
     }
     th { background: #1f2937; color: #f97316; }
     tr:hover { background: #0f172a; }
@@ -91,7 +92,7 @@
       padding: 14px;
       white-space: pre-wrap;
       overflow: auto;
-      max-height: 300px;
+      max-height: 320px;
       color: #d1d5db;
       font-size: 13px;
     }
@@ -100,19 +101,52 @@
       font-size: 13px;
       margin-top: 10px;
     }
-    @media (max-width: 900px) {
-      .grid { grid-template-columns: repeat(2, 1fr); }
+    .error-box {
+      display: none;
+      background: #450a0a;
+      color: #fecaca;
+      border: 1px solid #dc2626;
+      border-radius: 10px;
+      padding: 12px;
+      margin-top: 12px;
+      font-size: 14px;
+    }
+    .wheel-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .wheel-card {
+      background: #020617;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .wheel-card h3 {
+      margin: 0 0 10px;
+      color: #f97316;
+      font-size: 16px;
+    }
+    .small-text {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-top: 6px;
+    }
+    @media (max-width: 1000px) {
+      .grid, .wheel-grid { grid-template-columns: repeat(2, 1fr); }
     }
     @media (max-width: 560px) {
-      .grid { grid-template-columns: 1fr; }
+      .grid, .wheel-grid { grid-template-columns: 1fr; }
       header h1 { font-size: 24px; }
+      table { font-size: 13px; }
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>DMX Light Fixture File Generator</h1>
-    <p>Custom channel details daalo aur .d4, .r20, .xml files browser se download karo</p>
+    <h1>TALWARZ DMX Light Fixture File Generator</h1>
+    <p>Custom channel details, wheel mapping aur .d4, .r20, .xml files browser se download karo</p>
   </header>
 
   <div class="container">
@@ -144,6 +178,7 @@
 
     <div class="card">
       <h2>Channel Details</h2>
+      <p class="small-text">Function dropdown se choose karo. Custom naam bhi type kar sakte ho.</p>
       <div class="btns">
         <button class="primary" onclick="addChannel()">+ Add Channel</button>
         <button class="secondary" onclick="loadSample()">Load Sample</button>
@@ -163,6 +198,52 @@
         </thead>
         <tbody id="channelBody"></tbody>
       </table>
+    </div>
+
+    <div class="card">
+      <h2>Controller Wheel Mapping</h2>
+      <p class="note">Rule: Ek function sirf ek wheel par assign ho sakta hai. Agar same function Page 1 Wheel A aur Page 2 Wheel B dono par doge to error aayega.</p>
+      <div id="errorBox" class="error-box"></div>
+
+      <h3>Page 1</h3>
+      <div class="wheel-grid">
+        <div class="wheel-card">
+          <h3>Wheel A</h3>
+          <select id="p1a" onchange="validateWheelMapping()"></select>
+        </div>
+        <div class="wheel-card">
+          <h3>Wheel B</h3>
+          <select id="p1b" onchange="validateWheelMapping()"></select>
+        </div>
+        <div class="wheel-card">
+          <h3>Wheel C</h3>
+          <select id="p1c" onchange="validateWheelMapping()"></select>
+        </div>
+        <div class="wheel-card">
+          <h3>Wheel D</h3>
+          <select id="p1d" onchange="validateWheelMapping()"></select>
+        </div>
+      </div>
+
+      <h3 style="margin-top:22px;">Page 2</h3>
+      <div class="wheel-grid">
+        <div class="wheel-card">
+          <h3>Wheel A</h3>
+          <select id="p2a" onchange="validateWheelMapping()"></select>
+        </div>
+        <div class="wheel-card">
+          <h3>Wheel B</h3>
+          <select id="p2b" onchange="validateWheelMapping()"></select>
+        </div>
+        <div class="wheel-card">
+          <h3>Wheel C</h3>
+          <select id="p2c" onchange="validateWheelMapping()"></select>
+        </div>
+        <div class="wheel-card">
+          <h3>Wheel D</h3>
+          <select id="p2d" onchange="validateWheelMapping()"></select>
+        </div>
+      </div>
     </div>
 
     <div class="card">
@@ -186,6 +267,18 @@
   <script>
     let channels = [];
 
+    const functionOptions = [
+      'Dimmer', 'Red', 'Green', 'Blue', 'White', 'Amber', 'UV',
+      'Pan', 'Pan Fine', 'Tilt', 'Tilt Fine',
+      'Strobe', 'Shutter', 'Color Wheel', 'Color Macro',
+      'Gobo Wheel', 'Gobo Rotate', 'Prism', 'Prism Rotate',
+      'Focus', 'Zoom', 'Iris', 'Frost',
+      'Speed', 'Auto Program', 'Sound Mode', 'Reset', 'Lamp On/Off',
+      'Custom Function'
+    ];
+
+    const wheelIds = ['p1a', 'p1b', 'p1c', 'p1d', 'p2a', 'p2b', 'p2c', 'p2d'];
+
     function updateTotal() {
       document.getElementById('totalChannels').value = channels.length;
     }
@@ -198,7 +291,12 @@
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${index + 1}</td>
-          <td><input value="${escapeHtml(ch.name)}" onchange="channels[${index}].name=this.value"></td>
+          <td>
+            <select onchange="setChannelFunction(${index}, this.value)">
+              ${buildFunctionOptions(ch.name)}
+            </select>
+            <input style="margin-top:8px;" placeholder="Custom function name" value="${escapeHtml(ch.name)}" oninput="setChannelFunction(${index}, this.value)">
+          </td>
           <td><input type="number" value="${ch.default}" min="0" max="255" onchange="channels[${index}].default=this.value"></td>
           <td><input type="number" value="${ch.min}" min="0" max="255" onchange="channels[${index}].min=this.value"></td>
           <td><input type="number" value="${ch.max}" min="0" max="255" onchange="channels[${index}].max=this.value"></td>
@@ -208,20 +306,46 @@
       });
 
       updateTotal();
+      refreshWheelDropdowns();
+      validateWheelMapping();
     }
 
-    function addChannel(name = 'New Function', def = 0, min = 0, max = 255) {
+    function buildFunctionOptions(selectedValue) {
+      let html = '';
+      functionOptions.forEach(fn => {
+        const selected = fn === selectedValue ? 'selected' : '';
+        html += `<option value="${escapeHtml(fn)}" ${selected}>${escapeHtml(fn)}</option>`;
+      });
+      if (selectedValue && !functionOptions.includes(selectedValue)) {
+        html += `<option value="${escapeHtml(selectedValue)}" selected>${escapeHtml(selectedValue)}</option>`;
+      }
+      return html;
+    }
+
+    function setChannelFunction(index, value) {
+      channels[index].name = value;
+      refreshWheelDropdowns();
+      validateWheelMapping();
+    }
+
+    function addChannel(name = 'Dimmer', def = 0, min = 0, max = 255) {
       channels.push({ name, default: def, min, max });
       renderChannels();
     }
 
     function removeChannel(index) {
+      const removedName = channels[index].name;
       channels.splice(index, 1);
+      wheelIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el.value === removedName) el.value = '';
+      });
       renderChannels();
     }
 
     function clearChannels() {
       channels = [];
+      wheelIds.forEach(id => document.getElementById(id).value = '');
       renderChannels();
       document.getElementById('preview').textContent = 'Preview yahan dikhega...';
     }
@@ -238,6 +362,79 @@
         { name: 'Auto Program', default: 0, min: 0, max: 255 }
       ];
       renderChannels();
+      document.getElementById('p1a').value = 'Red';
+      document.getElementById('p1b').value = 'Green';
+      document.getElementById('p1c').value = 'Blue';
+      document.getElementById('p1d').value = 'White';
+      document.getElementById('p2a').value = 'Dimmer';
+      document.getElementById('p2b').value = 'Strobe';
+      document.getElementById('p2c').value = 'Color Macro';
+      document.getElementById('p2d').value = 'Auto Program';
+      validateWheelMapping();
+    }
+
+    function refreshWheelDropdowns() {
+      const currentValues = {};
+      wheelIds.forEach(id => currentValues[id] = document.getElementById(id).value);
+
+      const uniqueFunctions = [...new Set(channels.map(ch => ch.name.trim()).filter(Boolean))];
+
+      wheelIds.forEach(id => {
+        const select = document.getElementById(id);
+        let html = `<option value="">-- Select Function --</option>`;
+        uniqueFunctions.forEach(fn => {
+          const selected = currentValues[id] === fn ? 'selected' : '';
+          html += `<option value="${escapeHtml(fn)}" ${selected}>${escapeHtml(fn)}</option>`;
+        });
+        select.innerHTML = html;
+      });
+    }
+
+    function getWheelMapping() {
+      return {
+        page1: {
+          A: document.getElementById('p1a').value,
+          B: document.getElementById('p1b').value,
+          C: document.getElementById('p1c').value,
+          D: document.getElementById('p1d').value
+        },
+        page2: {
+          A: document.getElementById('p2a').value,
+          B: document.getElementById('p2b').value,
+          C: document.getElementById('p2c').value,
+          D: document.getElementById('p2d').value
+        }
+      };
+    }
+
+    function validateWheelMapping() {
+      const used = {};
+      const labels = {
+        p1a: 'Page 1 Wheel A', p1b: 'Page 1 Wheel B', p1c: 'Page 1 Wheel C', p1d: 'Page 1 Wheel D',
+        p2a: 'Page 2 Wheel A', p2b: 'Page 2 Wheel B', p2c: 'Page 2 Wheel C', p2d: 'Page 2 Wheel D'
+      };
+      let errors = [];
+
+      wheelIds.forEach(id => {
+        const value = document.getElementById(id).value;
+        if (!value) return;
+        if (used[value]) {
+          errors.push(`${value} already assigned on ${used[value]}. Same function cannot be assigned again on ${labels[id]}.`);
+        } else {
+          used[value] = labels[id];
+        }
+      });
+
+      const errorBox = document.getElementById('errorBox');
+      if (errors.length) {
+        errorBox.style.display = 'block';
+        errorBox.innerHTML = errors.join('<br>');
+        return false;
+      }
+
+      errorBox.style.display = 'none';
+      errorBox.innerHTML = '';
+      return true;
     }
 
     function getFixtureData() {
@@ -246,7 +443,8 @@
         fixtureName: document.getElementById('fixtureName').value.trim() || 'Custom Fixture',
         modeName: document.getElementById('modeName').value.trim() || 'Default Mode',
         notes: document.getElementById('notes').value.trim(),
-        channels
+        channels,
+        wheels: getWheelMapping()
       };
     }
 
@@ -267,6 +465,15 @@
       });
 
       xml += `  </mode>\n`;
+      xml += `  <wheels>\n`;
+      ['page1', 'page2'].forEach(page => {
+        xml += `    <page number="${page === 'page1' ? '1' : '2'}">\n`;
+        ['A', 'B', 'C', 'D'].forEach(wheel => {
+          xml += `      <wheel name="${wheel}" function="${xmlEscape(data.wheels[page][wheel] || '')}" />\n`;
+        });
+        xml += `    </page>\n`;
+      });
+      xml += `  </wheels>\n`;
       xml += `  <notes>${xmlEscape(data.notes)}</notes>\n`;
       xml += `</fixture>`;
       return xml;
@@ -290,6 +497,18 @@
         text += `${i + 1}=${ch.name},Default:${ch.default},Min:${ch.min},Max:${ch.max}\n`;
       });
 
+      text += `\n[Wheels_Page_1]\n`;
+      text += `Wheel_A=${data.wheels.page1.A || ''}\n`;
+      text += `Wheel_B=${data.wheels.page1.B || ''}\n`;
+      text += `Wheel_C=${data.wheels.page1.C || ''}\n`;
+      text += `Wheel_D=${data.wheels.page1.D || ''}\n`;
+
+      text += `\n[Wheels_Page_2]\n`;
+      text += `Wheel_A=${data.wheels.page2.A || ''}\n`;
+      text += `Wheel_B=${data.wheels.page2.B || ''}\n`;
+      text += `Wheel_C=${data.wheels.page2.C || ''}\n`;
+      text += `Wheel_D=${data.wheels.page2.D || ''}\n`;
+
       text += `\n[Notes]\n${data.notes}\n`;
       return text;
     }
@@ -306,6 +525,18 @@
         text += `CH${i + 1}|${ch.name}|DEFAULT=${ch.default}|MIN=${ch.min}|MAX=${ch.max}\n`;
       });
 
+      text += `\nWHEELS_PAGE_1\n`;
+      text += `A|${data.wheels.page1.A || ''}\n`;
+      text += `B|${data.wheels.page1.B || ''}\n`;
+      text += `C|${data.wheels.page1.C || ''}\n`;
+      text += `D|${data.wheels.page1.D || ''}\n`;
+
+      text += `\nWHEELS_PAGE_2\n`;
+      text += `A|${data.wheels.page2.A || ''}\n`;
+      text += `B|${data.wheels.page2.B || ''}\n`;
+      text += `C|${data.wheels.page2.C || ''}\n`;
+      text += `D|${data.wheels.page2.D || ''}\n`;
+
       text += `\nNOTES:${data.notes}\n`;
       return text;
     }
@@ -313,6 +544,18 @@
     function filename(ext) {
       const data = getFixtureData();
       return `${safeName(data.brand)}_${safeName(data.fixtureName)}_${safeName(data.modeName)}.${ext}`;
+    }
+
+    function beforeDownload() {
+      if (!channels.length) {
+        alert('Please add at least one channel.');
+        return false;
+      }
+      if (!validateWheelMapping()) {
+        alert('Wheel mapping error hai. Same function ko sirf ek wheel par assign karo.');
+        return false;
+      }
+      return true;
     }
 
     function downloadFile(content, name, type = 'text/plain') {
@@ -323,29 +566,39 @@
       a.download = name;
       document.body.appendChild(a);
       a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
     }
 
     function downloadD4() {
+      if (!beforeDownload()) return;
       downloadFile(makeD4(), filename('d4'));
     }
 
     function downloadR20() {
+      if (!beforeDownload()) return;
       downloadFile(makeR20(), filename('r20'));
     }
 
     function downloadXML() {
+      if (!beforeDownload()) return;
       downloadFile(makeXML(), filename('xml'), 'application/xml');
     }
 
     function downloadAll() {
-      downloadD4();
-      setTimeout(downloadR20, 300);
-      setTimeout(downloadXML, 600);
+      if (!beforeDownload()) return;
+      downloadFile(makeD4(), filename('d4'));
+      setTimeout(() => downloadFile(makeR20(), filename('r20')), 300);
+      setTimeout(() => downloadFile(makeXML(), filename('xml'), 'application/xml'), 600);
     }
 
     function showPreview() {
+      if (!validateWheelMapping()) {
+        document.getElementById('preview').textContent = 'Wheel mapping error hai. Same function ko sirf ek wheel par assign karo.';
+        return;
+      }
       document.getElementById('preview').textContent = makeXML();
     }
 
