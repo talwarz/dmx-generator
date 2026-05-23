@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DMX Fixture File Generator</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: #e5e7eb;
+    }
+    header {
+      padding: 24px;
+      text-align: center;
+      background: linear-gradient(135deg, #f97316, #111827);
+    }
+    header h1 { margin: 0; font-size: 30px; }
+    header p { margin: 8px 0 0; color: #fff7ed; }
+    .container {
+      max-width: 1150px;
+      margin: 24px auto;
+      padding: 0 16px;
+    }
+    .card {
+      background: #111827;
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 18px;
+      box-shadow: 0 12px 30px rgba(0,0,0,.25);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+    label {
+      display: block;
+      font-size: 13px;
+      color: #cbd5e1;
+      margin-bottom: 6px;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 11px;
+      border-radius: 9px;
+      border: 1px solid #475569;
+      background: #020617;
+      color: #e5e7eb;
+      outline: none;
+    }
+    textarea { min-height: 110px; resize: vertical; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      overflow: hidden;
+      border-radius: 10px;
+    }
+    th, td {
+      border-bottom: 1px solid #334155;
+      padding: 10px;
+      text-align: left;
+    }
+    th { background: #1f2937; color: #f97316; }
+    tr:hover { background: #0f172a; }
+    .btns {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+    button {
+      border: 0;
+      padding: 12px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .primary { background: #f97316; color: white; }
+    .secondary { background: #334155; color: white; }
+    .danger { background: #dc2626; color: white; }
+    .success { background: #16a34a; color: white; }
+    .preview {
+      background: #020617;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 14px;
+      white-space: pre-wrap;
+      overflow: auto;
+      max-height: 300px;
+      color: #d1d5db;
+      font-size: 13px;
+    }
+    .note {
+      color: #fbbf24;
+      font-size: 13px;
+      margin-top: 10px;
+    }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 560px) {
+      .grid { grid-template-columns: 1fr; }
+      header h1 { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>DMX Light Fixture File Generator</h1>
+    <p>Custom channel details daalo aur .d4, .r20, .xml files browser se download karo</p>
+  </header>
+
+  <div class="container">
+    <div class="card">
+      <h2>Fixture Details</h2>
+      <div class="grid">
+        <div>
+          <label>Company / Brand</label>
+          <input id="brand" value="Eonlighting" />
+        </div>
+        <div>
+          <label>Fixture Name</label>
+          <input id="fixtureName" value="LED PAR" />
+        </div>
+        <div>
+          <label>Mode Name</label>
+          <input id="modeName" value="Standard Mode" />
+        </div>
+        <div>
+          <label>Total Channels</label>
+          <input id="totalChannels" type="number" value="8" min="1" max="200" readonly />
+        </div>
+      </div>
+      <div style="margin-top:14px;">
+        <label>Notes</label>
+        <textarea id="notes">Generated custom DMX fixture profile. Verify inside your console/personality editor before live show use.</textarea>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Channel Details</h2>
+      <div class="btns">
+        <button class="primary" onclick="addChannel()">+ Add Channel</button>
+        <button class="secondary" onclick="loadSample()">Load Sample</button>
+        <button class="danger" onclick="clearChannels()">Clear</button>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>CH</th>
+            <th>Function</th>
+            <th>Default</th>
+            <th>Min</th>
+            <th>Max</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="channelBody"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>Generate Files</h2>
+      <div class="btns">
+        <button class="success" onclick="downloadD4()">Download .d4</button>
+        <button class="success" onclick="downloadR20()">Download .r20</button>
+        <button class="success" onclick="downloadXML()">Download .xml</button>
+        <button class="primary" onclick="downloadAll()">Download All</button>
+        <button class="secondary" onclick="showPreview()">Preview XML</button>
+      </div>
+      <p class="note">Note: Ye front-end generator hai. Actual console format brand/model ke hisaab se different ho sakta hai, isliye final file ko Personality Builder / console editor mein test karna zaroori hai.</p>
+    </div>
+
+    <div class="card">
+      <h2>Preview</h2>
+      <div id="preview" class="preview">Preview yahan dikhega...</div>
+    </div>
+  </div>
+
+  <script>
+    let channels = [];
+
+    function updateTotal() {
+      document.getElementById('totalChannels').value = channels.length;
+    }
+
+    function renderChannels() {
+      const body = document.getElementById('channelBody');
+      body.innerHTML = '';
+
+      channels.forEach((ch, index) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${index + 1}</td>
+          <td><input value="${escapeHtml(ch.name)}" onchange="channels[${index}].name=this.value"></td>
+          <td><input type="number" value="${ch.default}" min="0" max="255" onchange="channels[${index}].default=this.value"></td>
+          <td><input type="number" value="${ch.min}" min="0" max="255" onchange="channels[${index}].min=this.value"></td>
+          <td><input type="number" value="${ch.max}" min="0" max="255" onchange="channels[${index}].max=this.value"></td>
+          <td><button class="danger" onclick="removeChannel(${index})">Remove</button></td>
+        `;
+        body.appendChild(tr);
+      });
+
+      updateTotal();
+    }
+
+    function addChannel(name = 'New Function', def = 0, min = 0, max = 255) {
+      channels.push({ name, default: def, min, max });
+      renderChannels();
+    }
+
+    function removeChannel(index) {
+      channels.splice(index, 1);
+      renderChannels();
+    }
+
+    function clearChannels() {
+      channels = [];
+      renderChannels();
+      document.getElementById('preview').textContent = 'Preview yahan dikhega...';
+    }
+
+    function loadSample() {
+      channels = [
+        { name: 'Dimmer', default: 0, min: 0, max: 255 },
+        { name: 'Red', default: 0, min: 0, max: 255 },
+        { name: 'Green', default: 0, min: 0, max: 255 },
+        { name: 'Blue', default: 0, min: 0, max: 255 },
+        { name: 'White', default: 0, min: 0, max: 255 },
+        { name: 'Strobe', default: 0, min: 0, max: 255 },
+        { name: 'Color Macro', default: 0, min: 0, max: 255 },
+        { name: 'Auto Program', default: 0, min: 0, max: 255 }
+      ];
+      renderChannels();
+    }
+
+    function getFixtureData() {
+      return {
+        brand: document.getElementById('brand').value.trim() || 'Unknown Brand',
+        fixtureName: document.getElementById('fixtureName').value.trim() || 'Custom Fixture',
+        modeName: document.getElementById('modeName').value.trim() || 'Default Mode',
+        notes: document.getElementById('notes').value.trim(),
+        channels
+      };
+    }
+
+    function makeXML() {
+      const data = getFixtureData();
+      let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+      xml += `<fixture>\n`;
+      xml += `  <manufacturer>${xmlEscape(data.brand)}</manufacturer>\n`;
+      xml += `  <name>${xmlEscape(data.fixtureName)}</name>\n`;
+      xml += `  <mode name="${xmlEscape(data.modeName)}" channels="${data.channels.length}">\n`;
+
+      data.channels.forEach((ch, i) => {
+        xml += `    <channel number="${i + 1}">\n`;
+        xml += `      <function>${xmlEscape(ch.name)}</function>\n`;
+        xml += `      <default>${ch.default}</default>\n`;
+        xml += `      <range min="${ch.min}" max="${ch.max}" />\n`;
+        xml += `    </channel>\n`;
+      });
+
+      xml += `  </mode>\n`;
+      xml += `  <notes>${xmlEscape(data.notes)}</notes>\n`;
+      xml += `</fixture>`;
+      return xml;
+    }
+
+    function makeD4() {
+      const data = getFixtureData();
+      let text = `# D4 Fixture Personality Generated File\n`;
+      text += `# Manufacturer: ${data.brand}\n`;
+      text += `# Fixture: ${data.fixtureName}\n`;
+      text += `# Mode: ${data.modeName}\n`;
+      text += `# Channels: ${data.channels.length}\n\n`;
+      text += `[Fixture]\n`;
+      text += `Manufacturer=${data.brand}\n`;
+      text += `Name=${data.fixtureName}\n`;
+      text += `Mode=${data.modeName}\n`;
+      text += `Channels=${data.channels.length}\n\n`;
+      text += `[Channels]\n`;
+
+      data.channels.forEach((ch, i) => {
+        text += `${i + 1}=${ch.name},Default:${ch.default},Min:${ch.min},Max:${ch.max}\n`;
+      });
+
+      text += `\n[Notes]\n${data.notes}\n`;
+      return text;
+    }
+
+    function makeR20() {
+      const data = getFixtureData();
+      let text = `R20 FIXTURE PROFILE\n`;
+      text += `BRAND:${data.brand}\n`;
+      text += `FIXTURE:${data.fixtureName}\n`;
+      text += `MODE:${data.modeName}\n`;
+      text += `CHANNELS:${data.channels.length}\n\n`;
+
+      data.channels.forEach((ch, i) => {
+        text += `CH${i + 1}|${ch.name}|DEFAULT=${ch.default}|MIN=${ch.min}|MAX=${ch.max}\n`;
+      });
+
+      text += `\nNOTES:${data.notes}\n`;
+      return text;
+    }
+
+    function filename(ext) {
+      const data = getFixtureData();
+      return `${safeName(data.brand)}_${safeName(data.fixtureName)}_${safeName(data.modeName)}.${ext}`;
+    }
+
+    function downloadFile(content, name, type = 'text/plain') {
+      const blob = new Blob([content], { type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function downloadD4() {
+      downloadFile(makeD4(), filename('d4'));
+    }
+
+    function downloadR20() {
+      downloadFile(makeR20(), filename('r20'));
+    }
+
+    function downloadXML() {
+      downloadFile(makeXML(), filename('xml'), 'application/xml');
+    }
+
+    function downloadAll() {
+      downloadD4();
+      setTimeout(downloadR20, 300);
+      setTimeout(downloadXML, 600);
+    }
+
+    function showPreview() {
+      document.getElementById('preview').textContent = makeXML();
+    }
+
+    function safeName(value) {
+      return value.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    }
+
+    function xmlEscape(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    loadSample();
+  </script>
+</body>
+</html>
