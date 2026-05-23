@@ -130,7 +130,7 @@
         <button class="primary" onclick="downloadAll()">Download All</button>
         <button class="secondary" onclick="showPreview()">Preview XML</button>
       </div>
-      <p class="note">Note: Ye front-end generator hai. Actual console format brand/model ke hisaab se different ho sakta hai, isliye final file ko editor mein test karna zaroori hai.</p>
+      <p class="note">Note: .d4 export original-style XML structure mein generate hota hai. Final use se pehle personality editor mein verify karna zaroori hai.</p>
     </div>
 
     <div class="card"><h2>Preview</h2><div id="preview" class="preview">Preview yahan dikhega...</div></div>
@@ -357,18 +357,114 @@
 
     function makeD4() {
       const data = getFixtureData();
-      let text = `# D4 Fixture Personality Generated File\n# Manufacturer: ${data.brand}\n# Fixture: ${data.fixtureName}\n# Mode: ${data.modeName}\n# Channels: ${data.channels.length}\n\n[Fixture]\nManufacturer=${data.brand}\nName=${data.fixtureName}\nMode=${data.modeName}\nChannels=${data.channels.length}\n\n[Channels]\n`;
-      data.channels.forEach((ch, i) => text += `${i + 1}=${ch.name},Default:${ch.default},Min:${ch.min},Max:${ch.max}\n`);
-      Object.keys(data.wheelAssignments).sort((a,b)=>Number(a)-Number(b)).forEach(pageNo => {
-        text += `\n[Wheel_Assignment_Page_${pageNo}]\n`;
-        categories.forEach(cat => {
-          const row = data.wheelAssignments[pageNo][cat] || { w1:'', w2:'', w3:'', w4:'' };
-          text += `${cat}=Wheel1:${row.w1 || ''},Wheel2:${row.w2 || ''},Wheel3:${row.w3 || ''},Wheel4:${row.w4 || ''}
+      const attrNames = [...new Set(data.channels.map(ch => String(ch.name || '').trim()).filter(Boolean))];
+      const assignedWheelMap = buildAssignedWheelMap();
+
+      let xml = `<?xml version="1.0" encoding="utf-8"?>
 `;
+      xml += `<Fixture Name="${xmlEscape(data.fixtureName)}" ShortName="${xmlEscape(data.fixtureName)}" Company="${xmlEscape(data.brand)}">
+`;
+      xml += `  <Copyright Notice="© ${xmlEscape(data.brand)} 2026" />
+`;
+      xml += `  <Manual Filename="" Summary="" />
+`;
+      xml += `  <Control>
+`;
+
+      data.channels.forEach((ch) => {
+        const id = makeD4Id(ch.name);
+        const group = getD4Group(ch.name);
+        const cleanName = xmlEscape(ch.name);
+        const upperName = xmlEscape(String(ch.name || '').toUpperCase());
+        xml += `    <Attribute ID="${id}" Name="${cleanName}" Description="" Group="${group}">
+`;
+        xml += `      <Locate Locate="1:0" PowerOn="1:0" Highlight="1:100" Lowlight="1:0" />
+`;
+        xml += `      <Function ID="1" Name="${upperName}" Display="'${upperName} %.f',0~255" Dmx="0~255" Colour="0,0,0" />
+`;
+        xml += `    </Attribute>
+`;
+      });
+
+      xml += `  </Control>
+`;
+      xml += `  <Mode Name="${xmlEscape(data.modeName)}" Channels="${data.channels.length}">
+`;
+      xml += `    <Import PearlRef="" DiamondRef="" WysiwygRef="" />
+`;
+      xml += `    <Physical>
+`;
+      xml += `      <Bulb Type="" Lumens="0" ColourTemperature="0" />
+`;
+      xml += `      <Lens Name="" DegreesMin="0" DegreesMax="0" />
+`;
+      xml += `      <Weight Kg="0" />
+`;
+      xml += `      <Size Height="0" Width="0" Depth="0" />
+`;
+      xml += `      <Focus Type="Fixed" PanMax="0" TiltMax="0" PanMaxSpeed="0" TiltMaxSpeed="0" />
+`;
+      xml += `    </Physical>
+`;
+      xml += `    <Include>
+`;
+
+      data.channels.forEach((ch, index) => {
+        const id = makeD4Id(ch.name);
+        const channelOffset = index + 1;
+        const wheelNo = assignedWheelMap[String(ch.name || '').trim()] || '';
+        const wheelPart = wheelNo ? ` Wheel="${wheelNo}"` : '';
+        xml += `      <Attribute ID="${id}" ChannelOffset="${channelOffset}"${wheelPart} />
+`;
+      });
+
+      xml += `    </Include>
+`;
+      xml += `  </Mode>
+`;
+      xml += `</Fixture>`;
+
+      return '﻿' + xml;
+    }
+
+    function buildAssignedWheelMap() {
+      const map = {};
+      Object.keys(wheelAssignments).sort((a,b)=>Number(a)-Number(b)).forEach(pageNo => {
+        categories.forEach((cat, catIndex) => {
+          const row = wheelAssignments[pageNo][cat] || {};
+          ['w1','w2','w3','w4'].forEach((wheelKey, wheelIndex) => {
+            const fn = String(row[wheelKey] || '').trim();
+            if (!fn) return;
+            if (!map[fn]) {
+              map[fn] = getD4WheelNumber(Number(pageNo), catIndex, wheelIndex);
+            }
+          });
         });
       });
-      text += `\n[Notes]\n${data.notes}\n`;
-      return text;
+      return map;
+    }
+
+    function getD4WheelNumber(pageNo, categoryIndex, wheelIndex) {
+      const wheelsPerPage = categories.length * 4;
+      return ((pageNo - 1) * wheelsPerPage) + (categoryIndex * 4) + wheelIndex + 1;
+    }
+
+    function makeD4Id(value) {
+      return String(value || 'Attribute')
+        .trim()
+        .replace(/[^a-zA-Z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '') || 'Attribute';
+    }
+
+    function getD4Group(name) {
+      const n = String(name || '').toLowerCase();
+      if (['red','green','blue','white','amber','uv','colour','color','colour func','color macro','cto'].some(x => n.includes(x))) return 'C';
+      if (['pan','tilt','p/t'].some(x => n.includes(x))) return 'P';
+      if (['dimmer','shutter','strobe'].some(x => n.includes(x))) return 'I';
+      if (['gobo'].some(x => n.includes(x))) return 'G';
+      if (['focus','frost','zoom','iris'].some(x => n.includes(x))) return 'B';
+      if (['prism','effect'].some(x => n.includes(x))) return 'E';
+      return 'S';
     }
 
     function makeR20() {
