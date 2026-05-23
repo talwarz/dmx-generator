@@ -138,7 +138,7 @@
     let activePage = 1;
     let wheelAssignments = {};
     const categories = ['Intensity', 'Colour', 'C-Mix', 'Gobo 1', 'Gobo 2', 'Beam', 'Effect', 'Special', 'Control'];
-    const functionOptions = ['Dimmer','Shutter','Red','Green','Blue','White','Amber','UV','Pan','Pan Fine','Tilt','Tilt Fine','Colour Func','Colour','Color Macro','Gobo Func','Gobo','Gobo Rotate','Prism 1','Prism 1 Rot','Focus','Frost','Zoom','P/T Speed','Control','Reset','Lamp On/Off','Auto Program','Sound Mode','Custom Function'];
+    const functionOptions = ['Dimmer','Shutter','Red','Green','Blue','White','Amber','UV','Pan','Pan Fine','Tilt','Tilt Fine','Colour Func','Colour','Color Macro','Gobo Func','Gobo','Gobo Rotate','Prism 1','Prism 1 Rot','Prism 2','Prism 2 Rot','Focus','Frost','Zoom','P/T Speed','Control','Reset','Lamp On/Off','Auto Program','Sound Mode','Custom Function'];
 
     function blankPage() {
       const page = {};
@@ -376,8 +376,8 @@
       a.click();
       setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
     }
-    function downloadD4() { if (beforeDownload()) downloadFile(makeD4(), filename('d4')); }
-    function downloadR20() { if (beforeDownload()) downloadFile(makeR20(), filename('r20')); }
+    function downloadD4() { if (beforeDownload()) downloadFile(makeD4(), filename('d4'), 'application/octet-stream'); }
+    function downloadR20() { if (beforeDownload()) downloadFile(makeR20(), filename('r20'), 'application/octet-stream'); }
     function downloadXML() { if (beforeDownload()) downloadFile(makeXML(), filename('xml'), 'application/xml'); }
     function downloadAll() { if (!beforeDownload()) return; downloadD4(); setTimeout(downloadR20, 300); setTimeout(downloadXML, 600); }
     function showPreview() { document.getElementById('preview').textContent = makeXML(); }
