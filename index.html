@@ -164,7 +164,6 @@
           <td>${index + 1}</td>
           <td class="function-cell">
             <select onchange="setChannelFunction(${index}, this.value)">${buildFunctionOptions(ch.name)}</select>
-            <input style="margin-top:8px;" placeholder="Custom function name" value="${escapeHtml(ch.name)}" oninput="setChannelFunction(${index}, this.value)">
           </td>
           <td class="small-col"><input type="number" value="${ch.default}" min="0" max="255" onchange="channels[${index}].default=this.value"></td>
           <td class="small-col"><input type="number" value="${ch.min}" min="0" max="255" onchange="channels[${index}].min=this.value"></td>
@@ -192,6 +191,16 @@
     }
 
     function setChannelFunction(index, value) {
+      if (value === 'Custom Function') {
+        const customName = prompt('Enter custom function name');
+        if (customName && customName.trim()) {
+          channels[index].name = customName.trim();
+        } else {
+          channels[index].name = 'Custom Function';
+        }
+        renderChannels();
+        return;
+      }
       channels[index].name = value;
       renderAssignment();
     }
